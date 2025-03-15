@@ -18,8 +18,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 function checkWebsiteOrigin(companyName, sendResponse) {
     console.log("hi");
     console.log("Checking company name:", companyName);
-
-    let isAmerican = americanBrands.includes(companyName);
+    let isAmerican = false;
+    if (companyName) {
+        isAmerican = americanBrands.some(brand => companyName.toLowerCase().includes(brand.toLowerCase()));   
+    }
+    console.log("got there");
     console.log(isAmerican);
     sendResponse({ isAmerican });
 }
