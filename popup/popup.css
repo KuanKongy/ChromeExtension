@@ -11,7 +11,7 @@ body {
   border-radius: 20px;  /* This rounds the corners */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);  /* Optional shadow for a nice effect */
   padding: 20px;
-  overflow: hidden;  /* Makes sure the content inside doesn't overflow the rounded corners */
+  overflow: auto;  /* Makes sure the content inside doesn't overflow the rounded corners */
 }
 img {
     max-width: 50px;
