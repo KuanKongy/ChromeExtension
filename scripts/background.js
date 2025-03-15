@@ -1,29 +1,39 @@
 let americanBrands = ["nike", "tesla", "apple", "coca-cola", "ford", "amazon"];
 console.log("Loaded American brands:", americanBrands);
-let isAmerican = false;
-
+let lastWebsiteCheck = { isAmerican: false };
+let cartItems = [];
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "checkWebsite") {
-        console.log("getWebsiteStatus reached, will return true")
-        checkWebsiteOrigin(request.companyName, sendResponse);
-        return true;
-    } else if (request.action === "getWebsiteStatus") {
-        // Example response, you need to implement the actual logic
+        console.log("Checking company name:", request.companyName);
+        lastWebsiteCheck = { isAmerican: americanBrands.some(brand => request.companyName.toLowerCase().includes(brand.toLowerCase())) };
+        console.log(lastWebsiteCheck.isAmerican);
 
-        sendResponse({ isAmerican: false });
+        // If user is on a non-Amazon site, clear cart items
+        if (!request.url.includes("amazon")) {
+            cartItems = [];
+            console.log("cleared cart");
+        }
+
+        sendResponse(lastWebsiteCheck);
+    } 
+    else if (request.action === "getWebsiteStatus") {
+        console.log("Getting website status:", lastWebsiteCheck.isAmerican);
+        sendResponse(lastWebsiteCheck);
+    } 
+    else if (request.action === "checkCartItems") {
+        console.log("Checking cart items:", request.items);
+        cartItems = request.items.filter(item =>
+            americanBrands.some(brand => item.title.toLowerCase().includes(brand.toLowerCase()))
+        );
+        console.log(cartItems);
+        sendResponse({ americanItems: cartItems });
+    } 
+    else if (request.action === "getCartItems") {
+        console.log("Getting cart items:", cartItems);
+        sendResponse({ americanItems: cartItems });
     }
 });
-
-function checkWebsiteOrigin(companyName, sendResponse) {
-    console.log("Checking company name:", companyName);
-    if (companyName) {
-        isAmerican = americanBrands.some(brand => companyName.toLowerCase().includes(brand.toLowerCase()));   
-    }
-    console.log("got there");
-    console.log(isAmerican);
-    sendResponse({ isAmerican });
-}
 
 chrome.tabs.onActivated.addListener(activeInfo => {
     chrome.tabs.get(activeInfo.tabId, tab => {
