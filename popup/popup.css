@@ -6,12 +6,16 @@ body {
 }
 .popup-container {
   width: 250px;
-  height: 230px;
+  height: 170px;
   background-color: white;
   border-radius: 20px;  /* This rounds the corners */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);  /* Optional shadow for a nice effect */
   padding: 20px;
   overflow: auto;  /* Makes sure the content inside doesn't overflow the rounded corners */
+}
+.list-img {
+  max-width: 25px;
+  height: 10px;
 }
 img {
     max-width: 50px;
