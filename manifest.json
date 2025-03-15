@@ -3,7 +3,7 @@
   "name": "American Product Checker",
   "version": "1.0",
   "description": "Check if a website or item you are buying is American.",
-  "permissions": ["tabs", "activeTab", "storage"],
+  "permissions": ["tabs", "activeTab", "storage", "scripting"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "scripts/background.js"

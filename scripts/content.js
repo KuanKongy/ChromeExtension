@@ -1,15 +1,25 @@
-// Get the current website URL
-let currentUrl = window.location.hostname;
+function getCompanyName() {
+    let name =
+        document.querySelector('meta[property="og:site_name"]')?.content ||
+        document.querySelector('meta[name="application-name"]')?.content ||
+        document.title;
 
-// Extract the company name from the website's content
-let companyName = document.querySelector('meta[property="og:site_name"]')?.content ||
-    document.querySelector('meta[name="application-name"]')?.content ||
-    document.title;
+    if (!name || name.trim() === "") {
+        console.warn("Company name not found yet. Retrying...");
+        setTimeout(getCompanyName, 500); // Retry after 500ms
+        return;
+    }
 
-// Remove .com or .ca from the company name
-companyName = companyName.replace(/(\.com|\.ca)$/i, '');
+    name = name.replace(/(\.com|\.ca)$/i, '').trim().toLowerCase();
 
-console.log(companyName);
+    console.log("Extracted company name:", name);
 
-// Send data to the background script for processing
-chrome.runtime.sendMessage({ action: "checkWebsite", url: currentUrl, companyName: companyName.toLowerCase() });
+    chrome.runtime.sendMessage(
+        { action: "checkWebsite", url: window.location.hostname, companyName: name },
+        response => {
+            console.log("Response from background:", response);
+        }
+    );
+}
+
+getCompanyName(); // Start function
