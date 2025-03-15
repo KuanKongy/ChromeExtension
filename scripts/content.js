@@ -22,4 +22,25 @@ function getCompanyName() {
     );
 }
 
+// Extract Cart Items
+function extractCartItems() {
+    let items = [];
+    document.querySelectorAll(".sc-list-item").forEach(item => {
+        let title = item.querySelector(".a-truncate-cut")?.innerText.trim();
+        let asin = item.dataset.asin;
+
+        if (title) {
+            items.push({ title, asin });
+        }
+    });
+
+    console.log("Extracted Cart Items:", items);
+    chrome.runtime.sendMessage({ action: "checkCartItems", items });
+}
+
+// Run extractCartItems if Amazon (works only if .ca)
+if (window.location.href.includes("amazon") && window.location.href.includes("/cart/")) {
+    extractCartItems();
+}
+
 getCompanyName(); // Start function
