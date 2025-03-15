@@ -43,3 +43,37 @@ img {
 #dismiss:hover {
     background-color: blue;
 }
+
+#title {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between; /* Add this line */
+    margin-top: -20px;
+}
+
+#settings {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    padding: 5px 10px;
+}
+
+#settings:hover {
+    background-color: #0056b3;
+}
+
+#settings-container {
+    display: none;
+    position: absolute;
+    top: 50px; /* Adjust this value to position the dropdown correctly */
+    right: 20px; /* Align with the settings button */
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000; /* Ensure it appears above other elements */
+}

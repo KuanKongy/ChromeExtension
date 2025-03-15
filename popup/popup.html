@@ -1,31 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>American Checker</title>
-        <link rel="stylesheet" href="popup.css">
-    </head>
-    <body>
-        <div class = "popup-container">
-        <div id = "title">
-                <img src = "../icons/canada.png" alt = "canadian flag" />
-                <h2>American Checker</h2>
-        </div>
-        <hr>
-        <!-- Website Status -->
-        <div>
-            <h3>Website Check</h3>
-            <p id="website-result">Checking website...</p>
-        </div>
-        <!-- Shopping Cart Analysis -->
-        <div>
-            <p id="cart-result"></p>
-
-            <!--List out which items are canadian or not???-->
-        </div>
-        <button id = "dismiss">Dismiss</button>
-        <script src="popup.js"></script>
-        </div>
-    </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>American Checker</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<div class="popup-container">
+    <div id="title">
+        <img src="../icons/canada.png" alt="canadian flag" />
+        <h2>American Checker</h2>
+        <button id="settings">Settings</button>
+    </div>
+    <hr>
+    <!-- Website Status -->
+    <div>
+        <h3>Website Check</h3>
+        <p id="website-result">Checking website...</p>
+    </div>
+    <!-- Shopping Cart Analysis -->
+    <div>
+        <p id="cart-result"></p>
+    </div>
+    <div id="settings-container" style="display: none;">
+        <label for="country-select">Choose a country:</label>
+        <select id="country-select">
+            <option value="america">America</option>
+            <option value="canada">Canada</option>
+            <option value="china">China</option>
+            <option value="europe">Europe</option>
+        </select>
+    </div>
+    <button id="dismiss">Dismiss</button>
+    <script src="popup.js"></script>
+</div>
+</body>
 </html>

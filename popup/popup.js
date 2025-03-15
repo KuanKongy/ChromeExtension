@@ -1,14 +1,22 @@
 // Request Website Status
 //✅
 chrome.runtime.sendMessage({ action: "getWebsiteStatus" }, response => {
-    let websiteResult = document.getElementById("website-result");
-    
-    if (response && response.isAmerican) {
-        websiteResult.innerHTML = "<p><img class = 'list-img' src = '../icons/american.png'/> This website is American!</p>";
-    } else {
-        websiteResult.innerHTML = "<img class = 'list-img' src = '../icons/canada.png'/> This website is NOT American.";
-    }
+    format(response);
 });
+// Listen for messages from the background script
+
+
+function format(response) {
+    let websiteResult = document.getElementById("website-result");
+    let country = response.selected_country;
+    let countryName = country.charAt(0).toUpperCase() + country.slice(1);
+    let countryImage = `../icons/${country}.png`;
+    if (response && response.located_in_country) {
+        websiteResult.innerHTML = `<p><img class='list-img' src='${countryImage}'/> This website is from ${countryName}!</p>`;
+    } else {
+        websiteResult.innerHTML = `<img class='list-img' src='${countryImage}'/> This website is NOT from ${countryName}.`;
+    }
+}
 /*
 // Request Shopping Cart Analysis
 chrome.runtime.sendMessage({ action: "getCartItems" }, response => {
@@ -36,7 +44,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (response && response.americanItems.length > 0) {
                 cartResult.innerHTML = "<h3>Shopping cart check:</h3>";
                 response.americanItems.forEach(item => {
-                    cartResult.innerHTML += `<p><img class='list-img' src='../icons/american.png'/>
+                    cartResult.innerHTML += `<p><img class='list-img' src='../icons/america.png'/>
                     ${item.title}</p>`;
                 });
             } else {
@@ -57,6 +65,61 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     }*/
 });
 
+document.getElementById("settings").addEventListener("click", () => {
+    const settingsContainer = document.getElementById("settings-container");
+    if (settingsContainer.style.display === "none") {
+        settingsContainer.style.display = "block";
+    } else {
+        settingsContainer.style.display = "none";
+    }
+});
+document.getElementById("country-select").addEventListener("change", (event) => {
+    const selectedCountry = event.target.value;
+    console.log("Selected country:", selectedCountry);
+    // Send the selected country to the background script
+    chrome.runtime.sendMessage({ action: "setSelectedCountry", country: selectedCountry }, (response) => {
+        console.log("Response from background:", response);
+        // After setting the selected country, send a message to the content script
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { action: "getCompanyName" }, (response) => {
+
+            });
+        });
+        chrome.runtime.sendMessage({ action: "getWebsiteStatusUpdated",country: selectedCountry }, response => {
+            console.log('country selected, trying to update display');
+            format(response);
+        });
+    });
+    // Close the settings menu
+    const settingsContainer = document.getElementById("settings-container");
+    settingsContainer.style.display = "none";
+});
+
+
+
 document.getElementById("dismiss").addEventListener("click", () => {
     window.close();
+});
+
+const injectScript = (tabId) => {
+    chrome.scripting.executeScript({
+        target: { tabId },
+        files: ["scripts/content.js"],
+    }).catch(err => console.warn("Script injection failed:", err));
+};
+
+chrome.tabs.onActivated.addListener(activeInfo => {
+    chrome.tabs.get(activeInfo.tabId, tab => {
+        if (tab.url && tab.url.startsWith("http")) {
+            console.log("Tab switched to:", tab.url);
+            injectScript(activeInfo.tabId);
+        }
+    });
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status === "complete" && tab.url && tab.url.startsWith("http")) {
+        console.log("Page loaded or updated:", tab.url);
+        injectScript(tabId);
+    }
 });
