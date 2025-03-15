@@ -1,4 +1,4 @@
-let americanBrands = ["nike", "tesla", "apple", "coca-cola", "ford"];
+let americanBrands = ["nike", "tesla", "apple", "coca-cola", "ford", "amazon"];
 console.log("Loaded American brands:", americanBrands);
 let isAmerican = false;
 
@@ -24,3 +24,27 @@ function checkWebsiteOrigin(companyName, sendResponse) {
     console.log(isAmerican);
     sendResponse({ isAmerican });
 }
+
+chrome.tabs.onActivated.addListener(activeInfo => {
+    chrome.tabs.get(activeInfo.tabId, tab => {
+        if (tab.url && tab.url.startsWith("http")) {
+            console.log("Tab switched to:", tab.url);
+
+            chrome.scripting.executeScript({
+                target: { tabId: activeInfo.tabId },
+                files: ["scripts/content.js"]
+            }).catch(err => console.warn("Script injection failed:", err));
+        }
+    });
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status === "complete" && tab.url && tab.url.startsWith("http")) {
+        console.log("Page loaded or updated:", tab.url);
+
+        chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            files: ["scripts/content.js"]
+        }).catch(err => console.warn("Script injection failed:", err));
+    }
+});
