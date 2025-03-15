@@ -13,11 +13,11 @@ body {
   padding: 20px;
   overflow: auto;  /* Makes sure the content inside doesn't overflow the rounded corners */
 }
-.search-container {
-  margin-top: 10px;
+#search-container {
+  margin-top: 15px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
 
 }
 .list-img {
@@ -68,8 +68,7 @@ img {
     background-color: blue;
 }
 
-.website-container {
-}
+
 hr {
     border: 0;            /* Remove the default border */
     border-top: 1px solid #000; /* Add a solid black top border */

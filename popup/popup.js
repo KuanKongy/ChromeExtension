@@ -52,15 +52,17 @@ document.getElementById("search-button").addEventListener("click", () => {
     let searchResult = document.getElementById("search-input");
     let searchText = searchResult.value;
     console.log("searchText: ", searchText);
-    chrome.runtime.sendMessage({ action: "checkBrandStatus", brandName : searchText.toLowerCase() }, response => {
-        let brandResult = document.getElementById("brand-result");
-        brandResult.innerHTML = "<h3>Brand check:</h3>"
-        if (response && response.isAmerican) {
-            brandResult.innerHTML += `<p><img class = 'list-img' src = '../icons/american.png'/> ${searchText} is American!</p>`;
-        } else {
-            brandResult.innerHTML += `<p><img class = 'list-img' src = '../icons/canada.png'/> ${searchText} is NOT American.</p>`;
-        }
-    });
+    if(searchText.trim() !== "") {
+        chrome.runtime.sendMessage({ action: "checkBrandStatus", brandName : searchText.toLowerCase() }, response => {
+            let brandResult = document.getElementById("brand-result");
+            brandResult.innerHTML = "<h3>Brand Check:</h3>"
+            if (response && response.isAmerican) {
+                brandResult.innerHTML += `<p><img class = 'list-img' src = '../icons/american.png'/> ${searchText} is American!</p>`;
+            } else {
+                brandResult.innerHTML += `<p><img class = 'list-img' src = '../icons/canada.png'/> ${searchText} is NOT American.</p>`;
+            }
+        });
+    }
 });
 
 document.getElementById("dismiss").addEventListener("click", () => {
