@@ -58,3 +58,4 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         }).catch(err => console.warn("Script injection failed:", err));
     }
 });
+
