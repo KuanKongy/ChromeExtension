@@ -22,3 +22,7 @@ chrome.runtime.sendMessage({ action: "getCartItems" }, response => {
         cartResult.innerText = "✅ No American items detected in your cart!";
     }
 });
+
+document.getElementById("dismiss").addEventListener("click", () => {
+    window.close();
+});

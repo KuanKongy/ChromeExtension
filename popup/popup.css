@@ -1,0 +1,41 @@
+body {
+  background-color: transparent;  /* Make sure the body doesn't have a background */
+  margin: 0;
+  padding: 0;
+  border-radius: 20px;
+}
+.popup-container {
+  width: 250px;
+  height: 230px;
+  background-color: white;
+  border-radius: 20px;  /* This rounds the corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);  /* Optional shadow for a nice effect */
+  padding: 20px;
+  overflow: hidden;  /* Makes sure the content inside doesn't overflow the rounded corners */
+}
+img {
+    max-width: 50px;
+    height: 30px;
+    margin-right: 10px;
+}
+#title {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-top: -20px;
+}
+
+#dismiss {
+    display: block;
+    padding: 8px 12px;
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 30px;
+}
+#dismiss:hover {
+    background-color: blue;
+}
