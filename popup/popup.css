@@ -13,6 +13,13 @@ body {
   padding: 20px;
   overflow: auto;  /* Makes sure the content inside doesn't overflow the rounded corners */
 }
+.search-container {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+}
 .list-img {
   max-width: 25px;
   height: 10px;
@@ -21,6 +28,23 @@ img {
     max-width: 50px;
     height: 30px;
     margin-right: 10px;
+}
+#search-input {
+  text-align: center;
+  border-radius: 5px;
+  padding: 5px;
+}
+#search-button {
+  border-radius: 5px;
+  padding: 2px;
+  border : none;
+  background-color: #ff4d4d;
+  font-size: 14px;
+  color: white;
+  cursor: pointer;
+}
+#search-button:hover {
+  background-color: blue;
 }
 #title {
     display: flex;
@@ -42,4 +66,12 @@ img {
 }
 #dismiss:hover {
     background-color: blue;
+}
+
+.website-container {
+}
+hr {
+    border: 0;            /* Remove the default border */
+    border-top: 1px solid #000; /* Add a solid black top border */
+    margin: 10px 0;       /* Add margin for spacing above and below the line */
 }

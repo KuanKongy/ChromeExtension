@@ -2,7 +2,6 @@
 //✅
 chrome.runtime.sendMessage({ action: "getWebsiteStatus" }, response => {
     let websiteResult = document.getElementById("website-result");
-    
     if (response && response.isAmerican) {
         websiteResult.innerHTML = "<p><img class = 'list-img' src = '../icons/american.png'/> This website is American!</p>";
     } else {
@@ -43,18 +42,25 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
                 cartResult.innerHTML = "<h3>Shopping cart check:</h3>";
                 cartResult.innerHTML += "<p>✅ No American items detected in your cart!</p>";
             }
-            popupContainer.style.height = "230px";  // Set a default height if there's no content
+            popupContainer.style.height = "230px"; // height if on the amazon website
         });
-    } /*else {
-        // If NOT on Amazon, check website status
-        chrome.runtime.sendMessage({ action: "getWebsiteStatus" }, response => {
-            let websiteResult = document.getElementById("website-result");
-            websiteResult.innerText = response?.isAmerican 
-                ? "✅ This website is American!" 
-                : "❌ This website is NOT American.";
-            popupContainer.style.height = "170px";
-        });
-    }*/
+    } 
+});
+
+// manually searching if a brand is american or not
+document.getElementById("search-button").addEventListener("click", () => {
+    let searchResult = document.getElementById("search-input");
+    let searchText = searchResult.value;
+    console.log("searchText: ", searchText);
+    chrome.runtime.sendMessage({ action: "checkBrandStatus", brandName : searchText.toLowerCase() }, response => {
+        let brandResult = document.getElementById("brand-result");
+        brandResult.innerHTML = "<h3>Brand check:</h3>"
+        if (response && response.isAmerican) {
+            brandResult.innerHTML += `<p><img class = 'list-img' src = '../icons/american.png'/> ${searchText} is American!</p>`;
+        } else {
+            brandResult.innerHTML += `<p><img class = 'list-img' src = '../icons/canada.png'/> ${searchText} is NOT American.</p>`;
+        }
+    });
 });
 
 document.getElementById("dismiss").addEventListener("click", () => {

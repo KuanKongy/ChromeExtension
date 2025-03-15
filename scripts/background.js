@@ -1,50 +1,16 @@
-
+let americanBrands = ["nike", "tesla", "apple", "coca-cola", "ford", "amazon"];
+console.log("Loaded American brands:", americanBrands);
 let lastWebsiteCheck = { isAmerican: false };
 let cartItems = [];
 const brandCache = {}; // Cache to store brand lookups
 const OPENAI_API_KEY = "";
-let americanBrands = ["nike", "tesla", "apple", "coca-cola", "ford", "amazon"];
-console.log("Loaded American brands:", americanBrands);
-chrome.storage.local.set({ americanBrands: americanBrands }, () => {
-    console.log("American brands cached:", americanBrands);
-});
 
-function addCompanyToCache(companyName) {
-    chrome.storage.local.get('americanBrands', (result) => {
-        let cachedBrands = result.americanBrands || [];
-        if (!cachedBrands.includes(companyName.toLowerCase())) {
-            cachedBrands.push(companyName.toLowerCase());
-            chrome.storage.local.set({ americanBrands: cachedBrands }, () => {
-                console.log(`Added ${companyName} to cache.`);
-            });
-        } else {
-            console.log(`${companyName} is already in the cache.`);
-        }
-    });
-}
-
-async function checkBrandswithCache(companyName) {
-    return new Promise((resolve, reject) => {
-        chrome.storage.local.get('americanBrands', (result) => {
-            let cachedBrands = result.americanBrands || [];
-            if (companyName === undefined) {
-                console.log("30: checkBrandswithCache brandName is undefined", cachedBrands);
-                resolve(false);
-                return;
-            }
-            let isAmerican = cachedBrands.some(brand => companyName.toLowerCase().includes(brand.toLowerCase()));
-            console.log("34: checkBrandswithCache return values", cachedBrands, isAmerican);
-            resolve(isAmerican);
-        });
-    });
-}
-
-async function checkBrandWithChatGPT(companyName) {
-    if (brandCache[companyName] !== undefined) {
-        return brandCache[companyName]; // Return cached result
+async function checkBrandWithChatGPT(brandName) {
+    if (brandCache[brandName] !== undefined) {
+        return brandCache[brandName]; // Return cached result
     }
 
-    const prompt = `Is the company "${companyName}" an American company? Ignore regional subsidiaries, country-specific websites, or locations. Only answer "yes" if the company's headquarters is in the United States; otherwise, answer "no". Respond with only "yes" or "no" and nothing else.`;
+    const prompt = `Is the company "${brandName}" an American company? Ignore regional subsidiaries, country-specific websites, or locations. Only answer "yes" if the company's headquarters is in the United States; otherwise, answer "no". Respond with only "yes" or "no" and nothing else.`;
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -63,15 +29,11 @@ async function checkBrandWithChatGPT(companyName) {
 
         if (!response.ok) {
             console.error("OpenAI API request failed:", response.status, response.statusText);
-            //this section was to test without API key, when api fails it assumes the company is american, adds it to cache and returns true
-            //console.log("65: test function, checkBrandWithGPT failed, add name to cache, get cache value and return", companyName);
-            //addCompanyToCache(companyName);
-            //return checkBrandswithCache(companyName);
 
             if (response.status === 429) {
                 console.warn("Rate limit exceeded! Retrying after 10 seconds...");
                 await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10s & retry
-                return await checkBrandWithChatGPT(companyName);
+                return await checkBrandWithChatGPT(brandName);
             }
 
             return false; // Default to "not American" on API failure
@@ -86,11 +48,8 @@ async function checkBrandWithChatGPT(companyName) {
 
         const reply = data.choices[0].message?.content?.trim().toLowerCase();
         const isAmerican = reply.includes("yes");
-        //this is where it should be added to the cache. previous tester function should be there
-        console.log("background.js: adding company name to cache");
-        if(isAmerican){
-            addCompanyToCache(companyName);
-        }
+
+        brandCache[brandName] = isAmerican; // Cache result
         return isAmerican;
 
     } catch (error) {
@@ -99,45 +58,49 @@ async function checkBrandWithChatGPT(companyName) {
     }
 }
 
-//main listener
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === "checkWebsite") {
-        console.log("102: main, times called", times_called);
-        console.log("104: main, company name recieved", request.companyName);
+        console.log("Checking company name:", request.companyName);
         let companyName = request.companyName.toLowerCase();
-        let isAmerican = await checkBrandswithCache(companyName);
-        lastWebsiteCheck = { isAmerican: isAmerican};
-        console.log("107: main, checking website status with cache", lastWebsiteCheck.isAmerican);
+        lastWebsiteCheck = { isAmerican: americanBrands.some(brand => companyName.includes(brand.toLowerCase())) };
+
         if (!lastWebsiteCheck.isAmerican) {
-            console.log(`108: main not found in cache. Checking with ChatGPT`);
+            console.log(`Brand \"${companyName}\" not found in local database. Checking with ChatGPT...`);
             lastWebsiteCheck = { isAmerican: await checkBrandWithChatGPT(companyName) };
-            console.log("110: main chatgpt returned. ", lastWebsiteCheck.isAmerican);
+            console.log("returned", lastWebsiteCheck.isAmerican);
+            if (lastWebsiteCheck.isAmerican) {
+                americanBrands.push(companyName);
+            }
         }
 
-        console.log("114: main, after cache and gpt", lastWebsiteCheck.isAmerican);
+        console.log("Brand is American?", lastWebsiteCheck.isAmerican);
 
         if (!request.url.includes("amazon")) {
             cartItems = [];
+            console.log("Cleared cart items");
         }
-        sendResponse(lastWebsiteCheck);
 
+        sendResponse(lastWebsiteCheck);
     } else if (request.action === "getWebsiteStatus") {
-        checkBrandswithCache()
-        console.log("Getting website status:", lastWebsiteCheck);
         console.log("Getting cart items:", cartItems);
         sendResponse(lastWebsiteCheck);
-
     } else if (request.action === "checkCartItems") {
         console.log("Checking cart items:", cartItems);
+
         cartItems = request.items.filter(item =>
             americanBrands.some(brand => item.title.toLowerCase().includes(brand.toLowerCase()))
         );
         console.log("US cart items:", cartItems);
         sendResponse({ americanItems: cartItems });
-
     } else if (request.action === "getCartItems") {
         console.log("Getting cart items:", cartItems);
         sendResponse({ americanItems: cartItems });
+    }
+    else if (request.action === "checkBrandStatus") {
+        let brandName = request.brandName.toLowerCase();
+        console.log("brandName: ", brandName);
+        let american = { isAmerican: americanBrands.some(brand => brandName.includes(brand.toLowerCase())) };
+        sendResponse(american);
     }
 });
 
