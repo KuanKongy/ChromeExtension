@@ -5,9 +5,14 @@ let cartItems = [];
 const brandCache = {}; // Cache to store brand lookups
 const OPENAI_API_KEY = "key"
 
-chrome.storage.local.set({ americanBrands: americanBrands }, () => {
-    console.log("American brands cached:", americanBrands);
+chrome.storage.local.get("americanBrands", (result) => {
+    let cachedBrands = result.americanBrands || [];
+    let updatedBrands = Array.from(new Set([...cachedBrands, ...americanBrands])); // Merge and deduplicate
+    chrome.storage.local.set({ americanBrands: updatedBrands }, () => {
+        console.log("Updated cached American brands:", updatedBrands);
+    });
 });
+
 
 function addCompanyToCache(companyName) {
     chrome.storage.local.get('americanBrands', (result) => {
