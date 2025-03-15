@@ -5,9 +5,14 @@ let cartItems = [];
 const brandCache = {}; // Cache to store brand lookups
 const OPENAI_API_KEY = "key"
 
-chrome.storage.local.set({ americanBrands: americanBrands }, () => {
-    console.log("American brands cached:", americanBrands);
+chrome.storage.local.get("americanBrands", (result) => {
+    let cachedBrands = result.americanBrands || [];
+    let updatedBrands = Array.from(new Set([...cachedBrands, ...americanBrands])); // Merge and deduplicate
+    chrome.storage.local.set({ americanBrands: updatedBrands }, () => {
+        console.log("Updated cached American brands:", updatedBrands);
+    });
 });
+
 
 function addCompanyToCache(companyName) {
     chrome.storage.local.get('americanBrands', (result) => {
@@ -90,7 +95,8 @@ Respond with only "yes", "no", or "unknown", and nothing else.`;
 
         if (!response.ok) {
             console.error("OpenAI API request failed:", response.status, response.statusText);
-
+            addCompanyToCache(brandName);
+            return checkBrandswithCache(brandName);
             if (response.status === 429) {
                 console.warn("Rate limit exceeded! Retrying after 10 seconds...");
                 await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10s & retry
