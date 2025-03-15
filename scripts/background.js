@@ -95,8 +95,7 @@ Respond with only "yes", "no", or "unknown", and nothing else.`;
 
         if (!response.ok) {
             console.error("OpenAI API request failed:", response.status, response.statusText);
-            addCompanyToCache(brandName);
-            return checkBrandswithCache(brandName);
+
             if (response.status === 429) {
                 console.warn("Rate limit exceeded! Retrying after 10 seconds...");
                 await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10s & retry
