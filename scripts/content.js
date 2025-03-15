@@ -9,6 +9,7 @@ let companyName = document.querySelector('meta[property="og:site_name"]')?.conte
 // Remove .com or .ca from the company name
 companyName = companyName.replace(/(\.com|\.ca)$/i, '');
 
+console.log("content");
 console.log(companyName);
 
 // Send data to the background script for processing
