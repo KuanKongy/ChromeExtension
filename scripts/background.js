@@ -14,6 +14,7 @@ chrome.storage.local.get("americanBrands", (result) => {
     });
 });
 
+
 function addCompanyToCache(companyName) {
     chrome.storage.local.get('americanBrands', (result) => {
         let cachedBrands = result.americanBrands || [];
