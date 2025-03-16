@@ -2,9 +2,9 @@ let Brands = {"nike":"america", "tesla":"america", "apple":"america", "coca-cola
 //console.log("Loaded brands:", Brands);
 let lastWebsiteCheck = { located_in_country: false, current_country: "america" , company: "nike"};
 let cartItems = [];
-
+const non = {};
 const brandCache = {}; // Cache to store brand lookups
-
+const nonSelectedCountryAlternatives = {};
 let selected_country = "america";
 const promptCache = {}; // Cache to store brand lookups, string
 /*
@@ -192,8 +192,8 @@ async function getSearchPromptFromChatGPT(brandName, type) {
         return promptCache[brandName]; // Return cached result
     }
 
-    const promptSearch = `Generate an Amazon search prompt for alternatives to "${brandName}" and return only the search prompt, nothing else`;
-
+    //const promptSearch = `Generate an Amazon search prompt for alternatives to "${brandName}" and return only the search prompt, nothing else`;
+    const promptSearch = `Generate an Amazon search query to find products that offer the key features of '${brandName}', without mentioning the original brand. The search should focus only on functionality, highlighting essential capabilities like performance and useful features. Avoid including details like color, design, or overly specific product names. Return only the search query, nothing else.`;
     try {
         let response = "unknown";
         if (type === "search") {
@@ -400,7 +400,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
         }
 
-        const nonSelectedCountryAlternatives = {};
+        //const nonSelectedCountryAlternatives = {};
         if (cartItems.length !== 0) {
             for (const item of cartItems) {
                 const alternativePrompt = await getSearchPromptFromChatGPT(item.title, "search");
@@ -413,11 +413,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         console.log("US cart items:", cartItems);
 
         console.log("Alternatives:", nonSelectedCountryAlternatives);
-        sendResponse({ countriesItems: cartItems });
+        sendResponse({ countriesItems: cartItems,alternatives : nonSelectedCountryAlternatives });
         return true;
     } else if (request.action === "getCartItems") {
         console.log("Getting cart items:", cartItems);
-        sendResponse({countriesItems: cartItems});
+        sendResponse({countriesItems: cartItems, alternatives: nonSelectedCountryAlternatives});
         return true;
     } else if (request.action === "setSelectedCountry") {
         selected_country = request.country;
@@ -438,6 +438,17 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         //     console.log(`Selected country set to ${selected_country}`);
         //     sendResponse({success: true});
         // });
+        return true;
+    }
+    else if (request.action === "checkBrandStatus") {
+        let companyName = request.companyName.toLowerCase();
+        //console.log("brandName: ", brandName);
+        //let american = { isAmerican: americanBrands.some(brand => brandName.includes(brand.toLowerCase())) };
+        let temp = await checkBrandWithChatGPT(companyName, "web");
+        console.log("temp: ", temp);
+
+        sendResponse(temp);
+        console.log("dwaas");
         return true;
     }
     return true;

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "American Product Checker",
+  "name": "GeoShopper",
   "version": "1.0",
-  "description": "Check if a website or item you are buying is American.",
+  "description": "Checks the country of websites, and products",
   "permissions": ["tabs", "activeTab", "storage", "scripting"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "background": {

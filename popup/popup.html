@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>American Checker</title>
+    <title>GeoShopper</title>
     <link rel="stylesheet" href="popup.css">
 </head>
 <body>
 <div class="popup-container">
     <div id="title">
         <img src="../icons/canada.png" alt="canadian flag" />
-        <h2>American Checker</h2>
+        <h2>GeoShopper</h2>
         <button id="settings">Settings</button>
     </div>
     <hr>
@@ -23,16 +23,38 @@
     <div>
         <p id="cart-result"></p>
     </div>
-    <div id="settings-container" style="display: none;">
-        <label for="country-select">Choose a country:</label>
-        <select id="country-select">
-            <option value="america">America</option>
-            <option value="canada">Canada</option>
-            <option value="china">China</option>
-            <option value="europe">Europe</option>
-        </select>
-    </div>
-    <button id="dismiss">Dismiss</button>
+        <div id="settings-container" style="display: none;">
+            <label for="country-select">Choose a country:</label>
+            <select id="country-select">
+                <option value="america">America</option>
+                <option value="canada">Canada</option>
+                <option value="china">China</option>
+                <option value="europe">Europe</option>
+            </select>
+        </div>
+
+        <div id ="alternative-container">
+            <p id ="alternative-result"></p>
+        </div>
+
+        <!--Search bar-->
+        <div id = "search-container">
+            <input id = "search-input" type = "text" placeholder="Enter a brandname">
+            <button id = "search-button">Search</button>
+        </div>
+        <div id = "brand-container">
+            <p id = "brand-result"></p>
+        </div>
+
+        <div id = "favourite-container">
+            <span>
+            <label for = "fav-selector">Favourited brands</label>
+            <br>
+            <select id = "fav-selector">
+            </select>
+            </span>
+            <button id = "remove-fav">Remove favourite</button>
+        </div>
     <script src="popup.js"></script>
 </div>
 </body>
