@@ -1,10 +1,10 @@
 let Brands = {"nike":"america", "tesla":"america", "apple":"america", "coca-cola":"america", "ford":"america", "amazon":"america"};
 //console.log("Loaded brands:", Brands);
-let lastWebsiteCheck = { located_in_country: false };
+let lastWebsiteCheck = { located_in_country: false, current_country: "america" , company: "nike"};
 let cartItems = [];
 
 const brandCache = {}; // Cache to store brand lookups
-const OPENAI_API_KEY = "";
+
 let selected_country = "america";
 const promptCache = {}; // Cache to store brand lookups, string
 /*
@@ -18,6 +18,8 @@ chrome.storage.local.remove('Brands', () => {
 */
 
 chrome.storage.local.get("Brands", (result) => {
+    console.log("In get:", result);
+    console.log("In get2:", result.Brands);
     let cachedBrands = result.Brands || {};
     let updatedBrands = { ...cachedBrands, ...Brands }; // Merge dictionaries
     chrome.storage.local.set({ Brands: updatedBrands }, () => {
@@ -49,6 +51,15 @@ async function checkBrandswithCache(companyName) {
                 resolve(false);
                 return;
             }
+            // americanBrands.some(brand => companyName.includes(brand.toLowerCase()))
+            console.log("checkBrandswithCache1", cachedBrands);
+            console.log("checkBrandswithCache2", cachedBrands[companyName.toLowerCase()]);
+            console.log("checkBrandswithCache3", selected_country);
+            console.log("checkBrandswithCache4", companyName.toLowerCase());
+            console.log("checkBrandswithCache5", cachedBrands.hasOwnProperty(companyName.toLowerCase()));
+            //console.log("checkBrandswithCache1", cachedBrands.hasOwnProperty(companyName.toLowerCase()));
+            //console.log("checkBrandswithCache2", cachedBrands[companyName.toLowerCase()] === selected_country);
+
             let located_in_country = cachedBrands.hasOwnProperty(companyName.toLowerCase()) && cachedBrands[companyName.toLowerCase()] === selected_country;
             //console.log("34: checkBrandswithCache return values", cachedBrands, located_in_country);
             resolve(located_in_country);
@@ -122,14 +133,18 @@ Respond with only "yes", "no", or "unknown", and nothing else.`;
             console.error("Unexpected OpenAI response:", data);
             return false;
         }
-       console.log(promptWeb);
+        //console.log(promptWeb);
         const reply = data.choices[0].message?.content?.trim().toLowerCase();
-        console.log(`ChatGPT says data: ${reply}, ${type}`);
+
+        if(type === "web"){
+            console.log(`ChatGPT says data ${brandName}: ${reply}, ${type}`);
+        }
+
         const located_in_country = reply.includes("yes");
-        console.log(`ChatGPT says data: ${located_in_country}, ${type}`);
+        //console.log(`ChatGPT says data: ${located_in_country}, ${type}`);
 
         brandCache[brandName] = located_in_country; // Cache result
-        console.log("background.js: adding company name to cache");
+        //console.log("background.js: adding company name to cache");
         if(located_in_country){
             addCompanyToCache(brandName);
         }
@@ -220,7 +235,6 @@ async function searchAmazonForAlternatives(query) {
 
         const result = await response.json();
         const finalRes = extractAsinsAndTitles(result);
-        console.log(finalRes);
         return finalRes;
     } catch (error) {
         console.error('Error fetching data:', error);
@@ -250,8 +264,7 @@ async function filterNonSelectedProducts(products) {
     const nonSelectedProducts = [];
     let count = 0;
     for (const product of products) {
-        console.log("by title", product.title);
-        const is_country = await checkBrandWithChatGPT(product.title, "web");
+        const is_country = await checkBrandWithChatGPT(product.title, "cart");
         if (!is_country) {
             nonSelectedProducts.push(product);
             count++;
@@ -274,16 +287,32 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             console.log(`Stored company name: ${companyName}`);
         });
 
-        lastWebsiteCheck = {located_in_country: await checkBrandswithCache(companyName)};
+        let temp2 = await checkBrandswithCache(companyName);
+        let cachedBrands = await new Promise((resolve) => {
+            chrome.storage.local.get("Brands", (result) => {
+                resolve(result.Brands || {});
+            });
+        });
+        lastWebsiteCheck = {
+            located_in_country: temp2,
+            current_country: cachedBrands[companyName.toLowerCase()],
+            company: companyName.toLowerCase()
+        };
 
         if (!lastWebsiteCheck.located_in_country) {
             console.log(`Brand \"${companyName}\" not found in local database. Checking with ChatGPT...`);
 
-            lastWebsiteCheck = {located_in_country: await checkBrandWithChatGPT(companyName, "web")};
-            console.log("returned", lastWebsiteCheck.located_in_country);
-            // if (lastWebsiteCheck.located_in_country) {
-            //     Brands.push(companyName);
-            // }
+            let temp = await checkBrandWithChatGPT(companyName, "web");
+            let cachedBrands = await new Promise((resolve) => {
+                chrome.storage.local.get("Brands", (result) => {
+                    resolve(result.Brands || {});
+                });
+            });
+            lastWebsiteCheck = {
+                located_in_country: temp,
+                current_country: cachedBrands[companyName.toLowerCase()],
+                company: lastWebsiteCheck.company
+            };
 
         }
         console.log(`Brand is in country ${selected_country}?`, lastWebsiteCheck.located_in_country);
@@ -291,11 +320,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             cartItems = [];
             console.log("Cleared cart items");
         }
-        console.log("unique text before update popup");
-        // Send response back to the popup
+        
         sendResponse(lastWebsiteCheck);
     } else if (request.action === "getWebsiteStatus") {
         console.log("Getting website status:", lastWebsiteCheck.located_in_country);
+
         // Send response back to the popup
         sendResponse({located_in_country: lastWebsiteCheck.located_in_country, selected_country: selected_country});
 

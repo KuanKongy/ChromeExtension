@@ -10,7 +10,9 @@ function getCompanyName() {
         return;
     }
 
-    name = name.replace(/(\.com|\.ca)$/i, '').trim().toLowerCase();
+    //name = name.replace(/(\.com|\.ca)$/i, '').trim().toLowerCase();
+    name = name.replace(/\.com|\.ca/gi, '').trim().toLowerCase();
+
 
     console.log("Extracted company name:", name);
 

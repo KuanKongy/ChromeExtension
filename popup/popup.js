@@ -17,7 +17,7 @@ function format(response) {
     let country = response.selected_country;
     let countryName = country.charAt(0).toUpperCase() + country.slice(1);
     let countryImage = `../icons/${country}.png`;
-    console.log(response);
+    console.log("format:", response);
     if (response && response.located_in_country) {
         websiteResult.innerHTML = `<p><img class='list-img' src='${countryImage}'/> This website is from ${countryName}!</p>`;
     } else {
