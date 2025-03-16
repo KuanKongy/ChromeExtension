@@ -170,32 +170,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         sendResponse({located_in_country: lastWebsiteCheck.located_in_country, selected_country: selected_country});
 
 
-    } else if (request.action === "getWebsiteStatusUpdated") {
-        chrome.storage.local.get('currentCompanyName', (result) => {
-            if (result.currentCompanyName) {
-                console.log(`Retrieved stored company name: ${result.currentCompanyName}`);
-                companyName = result.currentCompanyName;
-            } else {
-                console.log("No company name stored.");
-
-            }
-        });
-        selected_country = request.country;
-        console.log("Checking company name in updated status:", request.companyName);
-        lastWebsiteCheck = {located_in_country: await checkBrandswithCache(companyName)};
-
-        if (!lastWebsiteCheck.located_in_country) {
-            console.log(`Brand \"${companyName}\" not found in local database. Checking with ChatGPT...`);
-            lastWebsiteCheck = {located_in_country: await checkBrandWithChatGPT(companyName, "web")};
-            console.log("returned", lastWebsiteCheck.located_in_country);
-        }
-        console.log(`Brand is in country ${selected_country}?`, lastWebsiteCheck.located_in_country);
-
-        console.log("Getting updated website status:", lastWebsiteCheck.located_in_country);
-        // Send response back to the popup
-        sendResponse({located_in_country: lastWebsiteCheck.located_in_country, selected_country: selected_country});
-
-
     } else if (request.action === "checkCartItems") {
         console.log("Checking cart items:", request.items);
 
@@ -239,26 +213,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         return true
     }
 });
-
-function getCachedCompanyName(companyName, callback) {
-    // Check in-memory cache first
-    if (brandCache.hasOwnProperty(companyName)) {
-        console.log(`Found ${companyName} in in-memory cache.`);
-        callback(brandCache[companyName]);
-        return;
-    }
-    // Check local storage cache
-    chrome.storage.local.get('Brands', (result) => {
-        let cachedBrands = result.Brands || {};
-        if (cachedBrands.hasOwnProperty(companyName.toLowerCase())) {
-            console.log(`Found ${companyName} in local storage cache.`);
-            callback(cachedBrands[companyName.toLowerCase()]);
-        } else {
-            console.log(`${companyName} not found in cache.`);
-            callback(null);
-        }
-    });
-}
 
 const injectScript = (tabId) => {
     chrome.scripting.executeScript({

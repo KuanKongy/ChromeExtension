@@ -5,6 +5,12 @@ chrome.runtime.sendMessage({ action: "getWebsiteStatus" }, response => {
 });
 // Listen for messages from the background script
 
+chrome.runtime.sendMessage({ action: "getWebsiteStatus" }, response => {
+    const selectedCountry = response.selected_country;
+    const countrySelect = document.getElementById("country-select");
+    countrySelect.value = selectedCountry;
+    console.log("Selected country set to:", selectedCountry);
+});
 
 function format(response) {
     let websiteResult = document.getElementById("website-result");
@@ -73,23 +79,46 @@ document.getElementById("settings").addEventListener("click", () => {
         settingsContainer.style.display = "none";
     }
 });
-document.getElementById("country-select").addEventListener("change", (event) => {
+document.getElementById("country-select").addEventListener("input", async (event) => {
     const selectedCountry = event.target.value;
     console.log("Selected country:", selectedCountry);
-    // Send the selected country to the background script
-    chrome.runtime.sendMessage({ action: "setSelectedCountry", country: selectedCountry }, (response) => {
-        console.log("Response from background:", response);
-        // After setting the selected country, send a message to the content script
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            chrome.tabs.sendMessage(tabs[0].id, { action: "getCompanyName" }, (response) => {
 
+    // Send the selected country to the background script
+    const setSelectedCountry = () => {
+        return new Promise((resolve) => {
+            chrome.runtime.sendMessage({ action: "setSelectedCountry", country: selectedCountry }, (response) => {
+                console.log("Response from background:", response);
+                resolve(response);
             });
         });
-        chrome.runtime.sendMessage({ action: "getWebsiteStatusUpdated",country: selectedCountry }, response => {
-            console.log('country selected, trying to update display');
-            format(response);
+    };
+
+    // Wait for the selected country to be set
+    await setSelectedCountry();
+
+    // Send a message to the content script and wait for the response
+    const getCompanyName = () => {
+        return new Promise((resolve) => {
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                chrome.tabs.sendMessage(tabs[0].id, { action: "getCompanyName" }, (response) => {
+                    console.log("Response from content script:", response);
+                    resolve(response);
+                });
+            });
         });
+    };
+
+    // Wait for the company name to be retrieved
+    await getCompanyName();
+    console.log("107: comapny name retrieved about to get website status");
+    // Request the updated website status
+    await new Promise(resolve => setTimeout(resolve, 200)); // 2 seconds delay
+
+    chrome.runtime.sendMessage({ action: "getWebsiteStatus" }, response => {
+        console.log("Response from background to getWebsiteStatus:");
+        format(response);
     });
+
     // Close the settings menu
     const settingsContainer = document.getElementById("settings-container");
     settingsContainer.style.display = "none";
