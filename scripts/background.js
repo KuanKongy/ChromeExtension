@@ -1,5 +1,5 @@
 let Brands = {"nike":"america", "tesla":"america", "apple":"america", "coca-cola":"america", "ford":"america", "amazon":"america"};
-console.log("Loaded brands:", Brands);
+//console.log("Loaded brands:", Brands);
 let lastWebsiteCheck = { located_in_country: false };
 let cartItems = [];
 
@@ -32,10 +32,10 @@ function addCompanyToCache(companyName) {
         if (!cachedBrands.hasOwnProperty(companyKey)) {
             cachedBrands[companyKey] = selected_country;
             chrome.storage.local.set({ Brands: cachedBrands }, () => {
-                console.log(`Added ${companyName} with country ${selected_country} to cache.`);
+                //console.log(`Added ${companyName} with country ${selected_country} to cache.`);
             });
         } else {
-            console.log(`${companyName} is already in the cache.`);
+            //console.log(`${companyName} is already in the cache.`);
         }
     });
 }
@@ -45,12 +45,12 @@ async function checkBrandswithCache(companyName) {
         chrome.storage.local.get('Brands', (result) => {
             let cachedBrands = result.Brands || {};
             if (companyName === undefined) {
-                console.log("30: checkBrandswithCache brandName is undefined", cachedBrands);
+                //console.log("30: checkBrandswithCache brandName is undefined", cachedBrands);
                 resolve(false);
                 return;
             }
             let located_in_country = cachedBrands.hasOwnProperty(companyName.toLowerCase()) && cachedBrands[companyName.toLowerCase()] === selected_country;
-            console.log("34: checkBrandswithCache return values", cachedBrands, located_in_country);
+            //console.log("34: checkBrandswithCache return values", cachedBrands, located_in_country);
             resolve(located_in_country);
         });
     });
@@ -58,7 +58,7 @@ async function checkBrandswithCache(companyName) {
 
 async function checkBrandWithChatGPT(brandName, type) {
     if (brandCache[brandName] !== undefined) {
-        console.log("found in cache:", brandName)
+        //console.log("found in cache:", brandName)
         return brandCache[brandName]; // Return cached result
     }
 
@@ -143,7 +143,7 @@ Respond with only "yes", "no", or "unknown", and nothing else.`;
 
 async function getSearchPromptFromChatGPT(brandName, type) {
     if (promptCache[brandName] !== undefined) {
-        console.log("found in cache:", brandName)
+       // console.log("found in cache:", brandName)
         return promptCache[brandName]; // Return cached result
     }
 
@@ -304,7 +304,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         console.log("Checking cart items:", request.items);
 
         cartItems = request.items.filter(item =>
-            Brands.some(brand => item.title.toLowerCase().includes(brand.toLowerCase()))
+            Object.keys(Brands).some(brand => item.title.toLowerCase().includes(brand.toLowerCase()))
         );
 
         if (cartItems.length !== request.items.length) {
@@ -328,6 +328,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             //console.log("before push", cartItems);
 
             cartItems.push(...newItems);
+
         }
 
         const nonSelectedCountryAlternatives = {};

@@ -17,6 +17,7 @@ function format(response) {
     let country = response.selected_country;
     let countryName = country.charAt(0).toUpperCase() + country.slice(1);
     let countryImage = `../icons/${country}.png`;
+    console.log(response);
     if (response && response.located_in_country) {
         websiteResult.innerHTML = `<p><img class='list-img' src='${countryImage}'/> This website is from ${countryName}!</p>`;
     } else {
@@ -47,11 +48,10 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         chrome.runtime.sendMessage({ action: "getCartItems" }, response => {
             let cartResult = document.getElementById("cart-result");
             let websiteResult = document.getElementById("website-result");
-            if (response && response.americanItems.length > 0) {
+            if (response && response.countriesItems.length > 0) {
                 cartResult.innerHTML = "<h3>Shopping cart check:</h3>";
-                response.americanItems.forEach(item => {
-                    cartResult.innerHTML += `<p><img class='list-img' src='../icons/america.png'/>
-                    ${item.title}</p>`;
+                response.countriesItems.forEach(item => {
+                    cartResult.innerHTML += `<p><img class='list-img' src='../icons/america.png'/> ${item.title}</p>`;
                 });
             } else {
                 cartResult.innerHTML = "<h3>Shopping cart check:</h3>";
@@ -59,16 +59,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             }
             popupContainer.style.height = "230px";  // Set a default height if there's no content
         });
-    } /*else {
-        // If NOT on Amazon, check website status
-        chrome.runtime.sendMessage({ action: "getWebsiteStatus" }, response => {
-            let websiteResult = document.getElementById("website-result");
-            websiteResult.innerText = response?.isAmerican 
-                ? "✅ This website is American!" 
-                : "❌ This website is NOT American.";
-            popupContainer.style.height = "170px";
-        });
-    }*/
+    }
 });
 
 document.getElementById("settings").addEventListener("click", () => {

@@ -39,7 +39,7 @@ function extractCartItems() {
 }
 
 // Run extractCartItems if Amazon (works only if .ca)
-if (window.location.href.includes("amazon") && window.location.href.includes("/cart/")) {
+if (window.location.href.includes("amazon") && window.location.href.includes("cart")) {
     extractCartItems();
 }
 
