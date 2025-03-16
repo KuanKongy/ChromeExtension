@@ -4,9 +4,18 @@ let lastWebsiteCheck = { located_in_country: false };
 let cartItems = [];
 
 const brandCache = {}; // Cache to store brand lookups
-const OPENAI_API_KEY = "key";
+const OPENAI_API_KEY = "";
 let selected_country = "america";
 const promptCache = {}; // Cache to store brand lookups, string
+/*
+chrome.storage.local.remove('Brands', () => {
+    if (chrome.runtime.lastError) {
+        console.error("Error clearing Brands cache:", chrome.runtime.lastError);
+    } else {
+        console.log("Brands cache cleared successfully.");
+    }
+});
+*/
 
 chrome.storage.local.get("Brands", (result) => {
     let cachedBrands = result.Brands || {};
@@ -54,7 +63,7 @@ async function checkBrandWithChatGPT(brandName, type) {
     }
 
     const promptWeb = `Is the company "${brandName}" a company located in ${selected_country}? Ignore regional subsidiaries, country-specific websites, or locations. Only answer "yes" if the company's headquarters is in the United States; otherwise, answer "no". Respond with only "yes" or "no" and nothing else.`;
-    const promptCart = `Is the company that owns and controls the brand "${brandName}" headquartered in the United States? Focus only on the ultimate parent company that has controlling ownership over the brand.
+    const promptCart = `Is the company that owns and controls the brand "${brandName}" headquartered in the ${selected_country}? Focus only on the ultimate parent company that has controlling ownership over the brand.
 
 - Ignore manufacturers, product names, subsidiaries, distributors, regional offices, country-specific websites, or retail locations. 
 - Answer "yes" only if the official headquarters of the ultimate parent company is in the United States.
@@ -97,7 +106,7 @@ Respond with only "yes", "no", or "unknown", and nothing else.`;
 
         if (!response.ok) {
             console.error("OpenAI API request failed:", response.status, response.statusText);
-            //delete after
+
             if (response.status === 429) {
                 console.warn("Rate limit exceeded! Retrying after 10 seconds...");
                 await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10s & retry
@@ -113,7 +122,7 @@ Respond with only "yes", "no", or "unknown", and nothing else.`;
             console.error("Unexpected OpenAI response:", data);
             return false;
         }
-
+       console.log(promptWeb);
         const reply = data.choices[0].message?.content?.trim().toLowerCase();
         console.log(`ChatGPT says data: ${reply}, ${type}`);
         const located_in_country = reply.includes("yes");
@@ -237,21 +246,21 @@ function extractAsinsAndTitles(data) {
     return extractedItems;
 }
 
-async function filterNonAmericanProducts(products) {
-    const nonAmericanProducts = [];
+async function filterNonSelectedProducts(products) {
+    const nonSelectedProducts = [];
     let count = 0;
     for (const product of products) {
         console.log("by title", product.title);
-        const isAmerican = await checkBrandWithChatGPT(product.title, "web");
-        if (!isAmerican) {
-            nonAmericanProducts.push(product);
+        const is_country = await checkBrandWithChatGPT(product.title, "web");
+        if (!is_country) {
+            nonSelectedProducts.push(product);
             count++;
             if (count === 5) {
                 break;
             }
         }
     }
-    return nonAmericanProducts;
+    return nonSelectedProducts;
 }
 
 
@@ -321,23 +330,23 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             cartItems.push(...newItems);
         }
 
-        const nonAmericanAlternatives = {};
+        const nonSelectedCountryAlternatives = {};
         if (cartItems.length !== 0) {
             for (const item of cartItems) {
                 const alternativePrompt = await getSearchPromptFromChatGPT(item.title, "search");
                 const searchResults = await searchAmazonForAlternatives(alternativePrompt);
-                const nonAmericanItems = await filterNonAmericanProducts(searchResults);
-                nonAmericanAlternatives[item.title] = nonAmericanItems;
+                const nonSelectedCountryItems = await filterNonSelectedProducts(searchResults);
+                nonSelectedCountryAlternatives[item.title] = nonSelectedCountryItems;
             }
         }
 
         console.log("US cart items:", cartItems);
 
-        console.log("Alternatives:", nonAmericanAlternatives);
-        sendResponse({ americanItems: cartItems });
+        console.log("Alternatives:", nonSelectedCountryAlternatives);
+        sendResponse({ countriesItems: cartItems });
     } else if (request.action === "getCartItems") {
         console.log("Getting cart items:", cartItems);
-        sendResponse({americanItems: cartItems});
+        sendResponse({countriesItems: cartItems});
 
     } else if (request.action === "setSelectedCountry") {
         selected_country = request.country;
