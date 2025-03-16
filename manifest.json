@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "GeoShopper",
   "version": "1.0",
-  "description": "Checks the country of websites, and products",
+  "description": "GeoShopper – Smart Shopping, Made Local!",
   "permissions": ["tabs", "activeTab", "storage", "scripting"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "background": {
