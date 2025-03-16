@@ -27,20 +27,44 @@ chrome.storage.local.get("Brands", (result) => {
 });
 
 
-function addCompanyToCache(companyName) {
-    chrome.storage.local.get('Brands', (result) => {
-        let cachedBrands = result.Brands || {};
-        let companyKey = companyName.toLowerCase();
-        if (!cachedBrands.hasOwnProperty(companyKey)) {
-            cachedBrands[companyKey] = selected_country;
-            chrome.storage.local.set({ Brands: cachedBrands }, () => {
-                //console.log(`Added ${companyName} with country ${selected_country} to cache.`);
-            });
-        } else {
-            //console.log(`${companyName} is already in the cache.`);
-        }
+// async function addCompanyToCache(companyName) {
+//     chrome.storage.local.get('Brands', (result) => {
+//         let cachedBrands = result.Brands || {};
+//         let companyKey = companyName.toLowerCase();
+//         if (!cachedBrands.hasOwnProperty(companyKey)) {
+//             cachedBrands[companyKey] = selected_country;
+//             chrome.storage.local.set({ Brands: cachedBrands }, () => {
+//                 console.log(`Added ${companyName} with country ${selected_country} to cache.`);
+//             });
+//         } else {
+//             //console.log(`${companyName} is already in the cache.`);
+//         }
+//     });
+// }
+
+async function addCompanyToCache(companyName) {
+    let cachedBrands = await new Promise((resolve) => {
+        chrome.storage.local.get('Brands', (result) => {
+            resolve(result.Brands || {}); // Ensure an empty object if no cache exists
+        });
     });
+
+    let companyKey = companyName.toLowerCase();
+    
+    if (!cachedBrands.hasOwnProperty(companyKey)) {
+        cachedBrands[companyKey] = selected_country;
+
+        await new Promise((resolve) => {
+            chrome.storage.local.set({ Brands: cachedBrands }, () => {
+                console.log(`Added ${companyName} with country ${selected_country} to cache.`);
+                resolve();
+            });
+        });
+    } else {
+        console.log(`${companyName} is already in the cache.`);
+    }
 }
+
 
 async function checkBrandswithCache(companyName) {
     return new Promise((resolve, reject) => {
@@ -62,6 +86,7 @@ async function checkBrandswithCache(companyName) {
 
             let located_in_country = cachedBrands.hasOwnProperty(companyName.toLowerCase()) && cachedBrands[companyName.toLowerCase()] === selected_country;
             //console.log("34: checkBrandswithCache return values", cachedBrands, located_in_country);
+            console.log("checkBrandswithCache6", located_in_country);
             resolve(located_in_country);
         });
     });
@@ -73,8 +98,13 @@ async function checkBrandWithChatGPT(brandName, type) {
         return brandCache[brandName]; // Return cached result
     }
 
-    const promptWeb = `Is the company "${brandName}" a company located in ${selected_country}? Ignore regional subsidiaries, country-specific websites, or locations. Only answer "yes" if the company's headquarters is in the United States; otherwise, answer "no". Respond with only "yes" or "no" and nothing else.`;
-    const promptCart = `Is the company that owns and controls the brand "${brandName}" headquartered in the ${selected_country}? Focus only on the ultimate parent company that has controlling ownership over the brand.
+    const promptWeb = `Is the company "${brandName}" headquartered in ${selected_country}? 
+Disregard regional subsidiaries, country-specific websites, or branch locations. 
+
+- Only answer "yes" if there is **definitive proof** that the company's global headquarters is in ${selected_country}.  
+- If there is **any uncertainty**, lack of reliable sources, or conflicting information, respond with "no".  
+- Provide **only** "yes" or "no" and nothing else.`;
+ const promptCart = `Is the company that owns and controls the brand "${brandName}" headquartered in the ${selected_country}? Focus only on the ultimate parent company that has controlling ownership over the brand.
 
 - Ignore manufacturers, product names, subsidiaries, distributors, regional offices, country-specific websites, or retail locations. 
 - Answer "yes" only if the official headquarters of the ultimate parent company is in the United States.
@@ -280,12 +310,20 @@ async function filterNonSelectedProducts(products) {
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === "checkWebsite") {
 
+
         console.log("Checking company name:", request.companyName);
+
+        if (!selected_country) {
+            selected_country = await new Promise((resolve) => {
+                chrome.storage.local.get("selected_country", (result) => {
+                    resolve(result.selected_country);
+                });
+            });
+        }
+
         let companyName = request.companyName.toLowerCase();
-        //cache value
-        chrome.storage.local.set({ currentCompanyName: companyName }, () => {
-            console.log(`Stored company name: ${companyName}`);
-        });
+        await addCompanyToCache(companyName);
+        console.log(`Stored company name: ${companyName}`);
 
         let temp2 = await checkBrandswithCache(companyName);
         let cachedBrands = await new Promise((resolve) => {
@@ -293,6 +331,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 resolve(result.Brands || {});
             });
         });
+
         lastWebsiteCheck = {
             located_in_country: temp2,
             current_country: cachedBrands[companyName.toLowerCase()],
@@ -320,15 +359,16 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             cartItems = [];
             console.log("Cleared cart items");
         }
-        
+        console.log(`Before checkWebsite`, lastWebsiteCheck);
         sendResponse(lastWebsiteCheck);
+        return true;
     } else if (request.action === "getWebsiteStatus") {
         console.log("Getting website status:", lastWebsiteCheck.located_in_country);
 
         // Send response back to the popup
         sendResponse({located_in_country: lastWebsiteCheck.located_in_country, selected_country: selected_country});
 
-
+        return true;
     } else if (request.action === "checkCartItems") {
         console.log("Checking cart items:", request.items);
 
@@ -374,18 +414,33 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
         console.log("Alternatives:", nonSelectedCountryAlternatives);
         sendResponse({ countriesItems: cartItems });
+        return true;
     } else if (request.action === "getCartItems") {
         console.log("Getting cart items:", cartItems);
         sendResponse({countriesItems: cartItems});
-
+        return true;
     } else if (request.action === "setSelectedCountry") {
         selected_country = request.country;
-        chrome.storage.local.set({selected_country}, () => {
-            console.log(`Selected country set to ${selected_country}`);
-            sendResponse({success: true});
+
+        await new Promise((resolve, reject) => {
+            chrome.storage.local.set({ selected_country }, () => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError); // Handle errors
+                } else {
+                    resolve(); // Resolve the Promise when the storage operation is done
+                }
+            });
         });
-        return true
+        console.log(`Selected country set to ${selected_country}`);
+        sendResponse({success: true});
+
+        // chrome.storage.local.set({selected_country}, () => {
+        //     console.log(`Selected country set to ${selected_country}`);
+        //     sendResponse({success: true});
+        // });
+        return true;
     }
+    return true;
 });
 
 const injectScript = (tabId) => {

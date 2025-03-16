@@ -19,7 +19,7 @@ function getCompanyName() {
     chrome.runtime.sendMessage(
         { action: "checkWebsite", url: window.location.hostname, companyName: name },
         response => {
-            console.log("Response from background:", response);
+            console.log("Response from background content getCompanyName:", response);
         }
     );
 }

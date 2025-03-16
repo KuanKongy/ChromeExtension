@@ -79,19 +79,20 @@ document.getElementById("country-select").addEventListener("input", async (event
     const setSelectedCountry = () => {
         return new Promise((resolve) => {
             chrome.runtime.sendMessage({ action: "setSelectedCountry", country: selectedCountry }, (response) => {
-                console.log("Response from background:", response);
+                console.log("Response from background setSelectedCountry:", response);
                 resolve(response);
             });
         });
     };
     // Wait for the selected country to be set
     await setSelectedCountry();
+    //await new Promise(resolve => setTimeout(resolve, 200)); // 2 seconds delay
     // Send a message to the content script and wait for the response
     const getCompanyName = () => {
         return new Promise((resolve) => {
             chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
                 chrome.tabs.sendMessage(tabs[0].id, { action: "getCompanyName" }, (response) => {
-                    console.log("Response from content script:", response);
+                    console.log("Response from content script getCompanyName:", response);
                     resolve(response);
                 });
             });
@@ -103,10 +104,25 @@ document.getElementById("country-select").addEventListener("input", async (event
     // Request the updated website status
     await new Promise(resolve => setTimeout(resolve, 200)); // 2 seconds delay
 
-    chrome.runtime.sendMessage({ action: "getWebsiteStatus" }, response => {
-        console.log("Response from background to getWebsiteStatus:");
-        format(response);
-    });
+    // chrome.runtime.sendMessage({ action: "getWebsiteStatus" }, response => {
+    //     console.log("Response from background to getWebsiteStatus:");
+    //     format(response);
+    // });
+    const getWebsiteStatus = () => {
+        return new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({ action: "getWebsiteStatus" }, (response) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    console.log("Response from background to getWebsiteStatus:", response);
+                    resolve(response);
+                }
+            });
+        });
+    };
+
+    let websiteStatus = await getWebsiteStatus();
+    format(websiteStatus);
     // Close the settings menu
     const settingsContainer = document.getElementById("settings-container");
     settingsContainer.style.display = "none";
