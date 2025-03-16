@@ -17,12 +17,38 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         chrome.runtime.sendMessage({ action: "getCartItems" }, response => {
             let cartResult = document.getElementById("cart-result");
             let websiteResult = document.getElementById("website-result");
+            let altResult = document.getElementById("alternative-result");
             if (response && response.americanItems.length > 0) {
+                console.log("response: ", response);
+                console.log("alt response: ", response.alternatives);
+                const keys = Object.keys(response.alternatives);
+                console.log("key: ", keys);
                 cartResult.innerHTML = "<h3>Shopping cart check:</h3>";
                 response.americanItems.forEach(item => {
                     cartResult.innerHTML += `<p><img class='list-img' src='../icons/american.png'/>
                     ${item.title}</p>`;
                 });
+                
+                for (const item_name of keys) {  // Use 'of' to iterate over array values
+                    const alternatives = response.alternatives[item_name]; // Get the alternatives array
+                    if (Array.isArray(alternatives)) {  // Ensure it's an array
+                        altResult.innerHTML += `
+                            <h3>
+                                alternatives for ${item_name}:
+                            </h3> 
+                        `;
+                        for (const alt of alternatives) {
+                            altResult.innerHTML += `
+                            <p>
+                                ✅ ${alt.title}
+                            </p>`;
+                            console.log(`Alternative for ${item_name}: ${alt.title} (ASIN: ${alt.asin})`);
+                        }
+                    } else {
+                        console.log(`No alternatives found for ${item_name}`);
+                    }
+                }
+
             } else {
                 cartResult.innerHTML = "<h3>Shopping cart check:</h3>";
                 cartResult.innerHTML += "<p>✅ No American items detected in your cart!</p>";
@@ -103,9 +129,21 @@ document.body.addEventListener('click', function(event) {
         chrome.storage.local.get("favourite", function(result) {
             let brands = result.favourite || [];
             console.log("brands: ", brands);
-            brands.push(searchText);
+            if (!brands.includes(searchText)) {
+                brands.push(searchText);
+            } else {
+                console.log("Brand already in the list");
+            }
             chrome.storage.local.set({favourite : brands}, function() {
                 console.log("favourited new brand: ", searchText);
+            });
+            // updating the list immediately after adding to array
+            let listElement = document.getElementById("fav-selector");
+            listElement.innerHTML = "";
+            brands.forEach(brand => {
+                let option = document.createElement("option"); // Create a new option element
+                option.textContent = brand; // Set the option text to the brand name
+                listElement.appendChild(option); // Append the option to the select elemen 
             });
         });
     }
@@ -113,23 +151,53 @@ document.body.addEventListener('click', function(event) {
 
 chrome.storage.local.get("favourite", function(result) {
         if(result.favourite) {
-            console.log("fav list: ",result.favourite);
             let favList = result.favourite;
             let listElement = document.getElementById("fav-selector");
             listElement.innerHTML = "";
             favList.forEach(brand => {
                 let option = document.createElement("option"); // Create a new option element
                 option.textContent = brand; // Set the option text to the brand name
+                option.value = brand;
                 listElement.appendChild(option); // Append the option to the select elemen 
             });
         } else {
             console.log("no brands favourited")
         }
     });
+
+
 //document.getElementById("show-fav").addEventListener('click', displayFavourites);
 //document.getElementById("fav-selector").addEventListener("change", displayFavourites);
-
 /*
 document.getElementById("dismiss").addEventListener("click", () => {
     window.close();
 });*/
+
+document.getElementById("remove-fav").addEventListener("click", function() {
+    let selectElement = document.getElementById("fav-selector");
+    let selectedValue = selectElement.value; // Get the selected value
+
+    if (selectedValue) {
+        // Loop through all options in the select element
+        for (let i = 0; i < selectElement.options.length; i++) {
+            if (selectElement.options[i].value === selectedValue) {
+                selectElement.remove(i); // Remove the selected option
+                break; // Exit the loop once the option is removed
+            }
+        }
+
+        // Optionally, you can also update your local storage to reflect the change
+        let updatedFavourites = [];
+        // Loop through all the remaining options and get their values
+        for (let i = 0; i < selectElement.options.length; i++) {
+            updatedFavourites.push(selectElement.options[i].value);
+        }
+
+        // Save the updated favourites to local storage (or update as needed)
+        chrome.storage.local.set({ "favourite": updatedFavourites });
+
+        console.log("Removed:", selectedValue); // Log the removed brand
+    } else {
+        alert("Please select a favourite to remove.");
+    }
+});

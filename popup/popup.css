@@ -135,5 +135,29 @@ td, th {
   text-align: left;
   padding: 8px;
 }
+
+
 #favourite-container {
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+#fav-selector {
+  appearance: none;
+  padding: 5px;
+  border-radius: 15px;
+}
+
+#remove-fav {
+  border-radius: 5px;
+  padding: 2px;
+  border : none;
+  background-color: #ff4d4d;
+  font-size: 14px;
+  color: white;
+  cursor: pointer;
+}
+#remove-fav:hover {
+  background-color: blue;
 }

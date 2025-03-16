@@ -4,6 +4,7 @@ let lastWebsiteCheck = { isAmerican: false };
 let cartItems = [];
 const brandCache = {}; // Cache to store brand lookups, boolean
 const promptCache = {}; // Cache to store brand lookups, string
+const nonAmericanAlternatives = {};
 
 
 async function checkBrandWithChatGPT(brandName) {
@@ -251,7 +252,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             cartItems.push(...newItems);
         }
 
-        const nonAmericanAlternatives = {};
         if (cartItems.length !== 0) {
             for (const item of cartItems) {
                 const alternativePrompt = await getSearchPromptFromChatGPT(item.title, "search");
@@ -263,10 +263,10 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
         console.log("US cart items:", cartItems);
         console.log("Alternatives:", nonAmericanAlternatives);
-        sendResponse({ americanItems: cartItems });
+        sendResponse({ americanItems: cartItems, alternatives: nonAmericanAlternatives });
     } else if (request.action === "getCartItems") {
         console.log("Getting cart items:", cartItems);
-        sendResponse({ americanItems: cartItems });
+        sendResponse({ americanItems: cartItems, alternatives: nonAmericanAlternatives });
     }
     else if (request.action === "checkBrandStatus") {
         let brandName = request.brandName.toLowerCase();

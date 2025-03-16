@@ -25,6 +25,10 @@
             <!--List out which items are canadian or not???-->
         </div>
 
+        <div id ="alternative-container">
+            <p id ="alternative-result"></p>
+        </div>
+
         <!--Search bar-->
         <div id = "search-container">
             <input id = "search-input" type = "text" placeholder="Enter a brandname">
@@ -33,10 +37,15 @@
         <div id = "brand-container">
             <p id = "brand-result"></p>
         </div>
+
         <div id = "favourite-container">
+            <span>
+            <label for = "fav-selector">Favourited brands</label>
+            <br>
             <select id = "fav-selector">
-               <option value="" disabled selected>favourites</option> 
             </select>
+            </span>
+            <button id = "remove-fav">Remove favourite</button>
         </div>
         <script src="popup.js"></script>
         </div>
