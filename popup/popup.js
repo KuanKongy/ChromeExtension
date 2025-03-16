@@ -79,6 +79,7 @@ document.getElementById("settings").addEventListener("click", () => {
         settingsContainer.style.display = "none";
     }
 });
+
 document.getElementById("country-select").addEventListener("input", async (event) => {
     const selectedCountry = event.target.value;
     console.log("Selected country:", selectedCountry);
@@ -92,10 +93,8 @@ document.getElementById("country-select").addEventListener("input", async (event
             });
         });
     };
-
     // Wait for the selected country to be set
     await setSelectedCountry();
-
     // Send a message to the content script and wait for the response
     const getCompanyName = () => {
         return new Promise((resolve) => {
@@ -107,7 +106,6 @@ document.getElementById("country-select").addEventListener("input", async (event
             });
         });
     };
-
     // Wait for the company name to be retrieved
     await getCompanyName();
     console.log("107: comapny name retrieved about to get website status");
@@ -118,7 +116,6 @@ document.getElementById("country-select").addEventListener("input", async (event
         console.log("Response from background to getWebsiteStatus:");
         format(response);
     });
-
     // Close the settings menu
     const settingsContainer = document.getElementById("settings-container");
     settingsContainer.style.display = "none";
