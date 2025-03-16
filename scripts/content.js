@@ -43,4 +43,12 @@ if (window.location.href.includes("amazon") && window.location.href.includes("/c
     extractCartItems();
 }
 
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "getCompanyName") {
+        console.log("Received request for company name");
+        getCompanyName();
+        sendResponse({ message: "Company name retrieved!" });
+    }
+});
+
 getCompanyName(); // Start function

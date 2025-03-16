@@ -1,27 +1,29 @@
-let americanBrands = ["nike", "tesla", "apple", "coca-cola", "ford", "amazon"];
-console.log("Loaded American brands:", americanBrands);
-let lastWebsiteCheck = { isAmerican: false };
+let Brands = {"nike":"america", "tesla":"america", "apple":"america", "coca-cola":"america", "ford":"america", "amazon":"america"};
+console.log("Loaded brands:", Brands);
+let lastWebsiteCheck = { located_in_country: false };
 let cartItems = [];
-const brandCache = {}; // Cache to store brand lookups, boolean
+
+const brandCache = {}; // Cache to store brand lookups
+const OPENAI_API_KEY = "key";
+let selected_country = "america";
 const promptCache = {}; // Cache to store brand lookups, string
 
-
-chrome.storage.local.get("americanBrands", (result) => {
-    let cachedBrands = result.americanBrands || [];
-    let updatedBrands = Array.from(new Set([...cachedBrands, ...americanBrands])); // Merge and deduplicate
-    chrome.storage.local.set({ americanBrands: updatedBrands }, () => {
-        console.log("Updated cached American brands:", updatedBrands);
+chrome.storage.local.get("Brands", (result) => {
+    let cachedBrands = result.Brands || {};
+    let updatedBrands = { ...cachedBrands, ...Brands }; // Merge dictionaries
+    chrome.storage.local.set({ Brands: updatedBrands }, () => {
     });
 });
 
 
 function addCompanyToCache(companyName) {
-    chrome.storage.local.get('americanBrands', (result) => {
-        let cachedBrands = result.americanBrands || [];
-        if (!cachedBrands.includes(companyName.toLowerCase())) {
-            cachedBrands.push(companyName.toLowerCase());
-            chrome.storage.local.set({ americanBrands: cachedBrands }, () => {
-                console.log(`Added ${companyName} to cache.`);
+    chrome.storage.local.get('Brands', (result) => {
+        let cachedBrands = result.Brands || {};
+        let companyKey = companyName.toLowerCase();
+        if (!cachedBrands.hasOwnProperty(companyKey)) {
+            cachedBrands[companyKey] = selected_country;
+            chrome.storage.local.set({ Brands: cachedBrands }, () => {
+                console.log(`Added ${companyName} with country ${selected_country} to cache.`);
             });
         } else {
             console.log(`${companyName} is already in the cache.`);
@@ -31,16 +33,16 @@ function addCompanyToCache(companyName) {
 
 async function checkBrandswithCache(companyName) {
     return new Promise((resolve, reject) => {
-        chrome.storage.local.get('americanBrands', (result) => {
-            let cachedBrands = result.americanBrands || [];
+        chrome.storage.local.get('Brands', (result) => {
+            let cachedBrands = result.Brands || {};
             if (companyName === undefined) {
                 console.log("30: checkBrandswithCache brandName is undefined", cachedBrands);
                 resolve(false);
                 return;
             }
-            let isAmerican = cachedBrands.some(brand => companyName.toLowerCase().includes(brand.toLowerCase()));
-            console.log("34: checkBrandswithCache return values", cachedBrands, isAmerican);
-            resolve(isAmerican);
+            let located_in_country = cachedBrands.hasOwnProperty(companyName.toLowerCase()) && cachedBrands[companyName.toLowerCase()] === selected_country;
+            console.log("34: checkBrandswithCache return values", cachedBrands, located_in_country);
+            resolve(located_in_country);
         });
     });
 }
@@ -51,7 +53,7 @@ async function checkBrandWithChatGPT(brandName, type) {
         return brandCache[brandName]; // Return cached result
     }
 
-    const promptWeb = `Is the company "${brandName}" an American company? Ignore regional subsidiaries, country-specific websites, or locations. Only answer "yes" if the company's headquarters is in the United States; otherwise, answer "no". Respond with only "yes" or "no" and nothing else.`;
+    const promptWeb = `Is the company "${brandName}" a company located in ${selected_country}? Ignore regional subsidiaries, country-specific websites, or locations. Only answer "yes" if the company's headquarters is in the United States; otherwise, answer "no". Respond with only "yes" or "no" and nothing else.`;
     const promptCart = `Is the company that owns and controls the brand "${brandName}" headquartered in the United States? Focus only on the ultimate parent company that has controlling ownership over the brand.
 
 - Ignore manufacturers, product names, subsidiaries, distributors, regional offices, country-specific websites, or retail locations. 
@@ -95,14 +97,16 @@ Respond with only "yes", "no", or "unknown", and nothing else.`;
 
         if (!response.ok) {
             console.error("OpenAI API request failed:", response.status, response.statusText);
-
+            //delete after
+            addCompanyToCache(brandName);
+            return checkBrandswithCache(brandName);
             if (response.status === 429) {
                 console.warn("Rate limit exceeded! Retrying after 10 seconds...");
                 await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10s & retry
                 return await checkBrandWithChatGPT(brandName, type);
             }
 
-            return false; // Default to "not American" on API failure
+            return false; // Default to "not" on API failure
         }
 
         const data = await response.json();
@@ -113,14 +117,16 @@ Respond with only "yes", "no", or "unknown", and nothing else.`;
         }
 
         const reply = data.choices[0].message?.content?.trim().toLowerCase();
-        const isAmerican = reply.includes("yes");
+        console.log(`ChatGPT says data: ${reply}, ${type}`);
+        const located_in_country = reply.includes("yes");
+        console.log(`ChatGPT says data: ${located_in_country}, ${type}`);
 
-        brandCache[brandName] = isAmerican; // Cache result
-        console.log(`background.js: adding company name to cache: "${brandName}"`);
-        if(isAmerican){
+        brandCache[brandName] = located_in_country; // Cache result
+        console.log("background.js: adding company name to cache");
+        if(located_in_country){
             addCompanyToCache(brandName);
         }
-        return isAmerican;
+        return located_in_country;
 
     } catch (error) {
         console.error("Error while calling OpenAI API:", error);
@@ -253,37 +259,50 @@ async function filterNonAmericanProducts(products) {
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === "checkWebsite") {
+
         console.log("Checking company name:", request.companyName);
         let companyName = request.companyName.toLowerCase();
-        lastWebsiteCheck = { isAmerican: americanBrands.some(brand => companyName.includes(brand.toLowerCase())) };
-        lastWebsiteCheck = { isAmerican: await checkBrandswithCache(companyName)};
+        //cache value
+        chrome.storage.local.set({ currentCompanyName: companyName }, () => {
+            console.log(`Stored company name: ${companyName}`);
+        });
 
-        if (!lastWebsiteCheck.isAmerican) {
+        lastWebsiteCheck = {located_in_country: await checkBrandswithCache(companyName)};
+
+        if (!lastWebsiteCheck.located_in_country) {
             console.log(`Brand \"${companyName}\" not found in local database. Checking with ChatGPT...`);
-            lastWebsiteCheck = { isAmerican: await checkBrandWithChatGPT(companyName, "web") };
-            console.log("returned", lastWebsiteCheck.isAmerican);
+
+            lastWebsiteCheck = {located_in_country: await checkBrandWithChatGPT(companyName, "web")};
+            console.log("returned", lastWebsiteCheck.located_in_country);
+            // if (lastWebsiteCheck.located_in_country) {
+            //     Brands.push(companyName);
+            // }
+
         }
-
-        console.log("Brand is American?", lastWebsiteCheck.isAmerican);
-
+        console.log(`Brand is in country ${selected_country}?`, lastWebsiteCheck.located_in_country);
         if (!request.url.includes("amazon")) {
             cartItems = [];
             console.log("Cleared cart items");
         }
-
+        console.log("unique text before update popup");
+        // Send response back to the popup
         sendResponse(lastWebsiteCheck);
     } else if (request.action === "getWebsiteStatus") {
-        console.log("Getting website status:", lastWebsiteCheck.isAmerican);
-        sendResponse(lastWebsiteCheck);
+        console.log("Getting website status:", lastWebsiteCheck.located_in_country);
+        // Send response back to the popup
+        sendResponse({located_in_country: lastWebsiteCheck.located_in_country, selected_country: selected_country});
+
+
     } else if (request.action === "checkCartItems") {
         console.log("Checking cart items:", request.items);
 
         cartItems = request.items.filter(item =>
-            americanBrands.some(brand => item.title.toLowerCase().includes(brand.toLowerCase()))
+            Brands.some(brand => item.title.toLowerCase().includes(brand.toLowerCase()))
         );
 
         if (cartItems.length !== request.items.length) {
-            const uncheckedItems = request.items.filter(item => 
+            const uncheckedItems = request.items.filter(item =>
+
                 !cartItems.some(cartItem => cartItem.title.toLowerCase() === item.title.toLowerCase())
             );
 
@@ -291,12 +310,16 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
             const results = await Promise.all(
                 uncheckedItems.map(async item => {
-                    const isAmerican = await checkBrandWithChatGPT(item.title, "cart");
-                    return { item, isAmerican };
+                    const located_in_country = await checkBrandWithChatGPT(item.title, "cart");
+                    return {item, located_in_country};
                 })
             );
 
-            const newItems = results.filter(result => result.isAmerican).map(result => result.item);
+
+            const newItems = results.filter(result => result.located_in_country).map(result => result.item);
+            //console.log("returned", newItems);
+            //console.log("before push", cartItems);
+
             cartItems.push(...newItems);
         }
 
@@ -311,11 +334,20 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         }
 
         console.log("US cart items:", cartItems);
+
         console.log("Alternatives:", nonAmericanAlternatives);
         sendResponse({ americanItems: cartItems });
     } else if (request.action === "getCartItems") {
         console.log("Getting cart items:", cartItems);
-        sendResponse({ americanItems: cartItems });
+        sendResponse({americanItems: cartItems});
+
+    } else if (request.action === "setSelectedCountry") {
+        selected_country = request.country;
+        chrome.storage.local.set({selected_country}, () => {
+            console.log(`Selected country set to ${selected_country}`);
+            sendResponse({success: true});
+        });
+        return true
     }
 });
 
